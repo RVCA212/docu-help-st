@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 
 # Streamlit App
 def main():
-    st.title("Langchain Query App")
+    st.title("Chat with Documents.com")
 
     # API keys (Read from environment variables)
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -54,7 +54,14 @@ def main():
 
         if submit_button:
             with st.spinner('Processing...'):
+                # Log the input query to the terminal
+                print(f"Input Query: {query}")
+
                 response = chain.invoke(query)
+
+                # Log the response to the terminal
+                print(f"Output Response: {response}")
+
             st.write(response)
 
 if __name__ == "__main__":
