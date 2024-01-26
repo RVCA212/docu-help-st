@@ -1,0 +1,6 @@
+streamlit
+langchain_openai
+pinecone-client
+langchain_community
+langchain_core
+openai==1.2.2
