@@ -24,7 +24,7 @@ def main():
 
     if pinecone_index_name:
         # Your existing setup with user inputs
-        model_name = 'text-embedding-3-small'
+        model_name = 'text-embedding-ada-002'
         embed = OpenAIEmbeddings(model=model_name, openai_api_key=OPENAI_API_KEY)
 
         pc = Pinecone(api_key=PINE_API_KEY)
