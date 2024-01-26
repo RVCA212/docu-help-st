@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 
 # Streamlit App
 def main():
-    st.title("Chat with Documents.com")
+    st.title("Chat with Documentation.com")
 
     # API keys (Read from environment variables)
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
