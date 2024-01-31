@@ -6,8 +6,8 @@ import time
 from langchain_community.vectorstores import Pinecone as PineconeVectorStore
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain_openai import ChatOpenAI
+from langchain.streams import RAGStream  # Import RAGStream
 
 # Streamlit App
 def main():
@@ -47,26 +47,21 @@ def main():
         prompt = ChatPromptTemplate.from_template(template)
         model = ChatOpenAI(temperature=0, model=model_option, openai_api_key=OPENAI_API_KEY)
 
-
         def format_docs_with_sources(docs):
-        # This function formats the documents and includes their sources.
+            # This function formats the documents and includes their sources.
             formatted_docs = []
             for doc in docs:
                 content = doc.page_content
                 source = doc.metadata.get('source', 'Unknown source')
                 formatted_docs.append(f"{content}\nSource: {source}")
             return "\n\n".join(formatted_docs)
-    
-        rag_chain = (
-            RunnablePassthrough.assign(context=(lambda x: format_docs_with_sources(x["context"])))
-            | prompt
-            | model
-            | StrOutputParser()
-        )
 
-        rag_chain_with_source = RunnableParallel(
-            {"context": retriever, "question": RunnablePassthrough()}
-        ).assign(answer=rag_chain)
+        # Use RAGStream for streaming documents
+        rag_stream = RAGStream(
+            retriever=retriever,
+            generator=prompt | model | StrOutputParser(),
+            formatter=format_docs_with_sources
+        )
 
         # Query input area
         query = st.text_area("Enter your query:", height=150)
@@ -77,12 +72,14 @@ def main():
                 # Log the input query to the terminal
                 print(f"Input Query: {query}")
 
-                response = rag_chain_with_source.invoke(query)
+                # Start the streaming process
+                responses = rag_stream.stream({"question": query})
 
-                # Log the response to the terminal
-                print(f"Output Response: {response}")
-
-            st.write(response)
+                # Collect and display responses
+                for response in responses:
+                    # Log the response to the terminal
+                    print(f"Output Response: {response}")
+                    st.write(response)
 
 if __name__ == "__main__":
     main()
