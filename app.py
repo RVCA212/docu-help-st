@@ -50,12 +50,12 @@ def main():
 
         def format_docs_with_sources(docs):
         # This function formats the documents and includes their sources.
-        formatted_docs = []
-        for doc in docs:
-            content = doc.page_content
-            source = doc.metadata.get('source', 'Unknown source')
-            formatted_docs.append(f"{content}\nSource: {source}")
-        return "\n\n".join(formatted_docs)
+            formatted_docs = []
+            for doc in docs:
+                content = doc.page_content
+                source = doc.metadata.get('source', 'Unknown source')
+                formatted_docs.append(f"{content}\nSource: {source}")
+            return "\n\n".join(formatted_docs)
     
         rag_chain = (
             RunnablePassthrough.assign(context=(lambda x: format_docs_with_sources(x["context"])))
