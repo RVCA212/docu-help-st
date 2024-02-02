@@ -13,8 +13,11 @@ from langchain_openai import ChatOpenAI
 def get_active_pinecone_indexes(api_key):
     pc = Pinecone(api_key=api_key)
     indexes_info = pc.list_indexes()
-    active_index_names = [index['name'] for index in indexes_info['indexes'] if index['status']['state'] == 'Ready']
+    # Assuming indexes_info is a dictionary containing a list under the key 'indexes'
+    # and each item in that list is a dictionary with keys 'name' and 'status'
+    active_index_names = [index['name'] for index in indexes_info['indexes'] if index['status'] == 'READY']
     return active_index_names
+
 
 # Streamlit App
 def main():
