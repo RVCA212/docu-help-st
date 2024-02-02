@@ -6,8 +6,15 @@ import time
 from langchain_community.vectorstores import Pinecone as PineconeVectorStore
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain_openai import ChatOpenAI
-from langchain.streams import RAGStream  # Import RAGStream
+
+# Function to get active Pinecone index names
+def get_active_pinecone_indexes(api_key):
+    pc = Pinecone(api_key=api_key)
+    indexes_info = pc.list_indexes()
+    active_index_names = [index['name'] for index in indexes_info['indexes'] if index['status']['state'] == 'Ready']
+    return active_index_names
 
 # Streamlit App
 def main():
@@ -17,26 +24,24 @@ def main():
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     PINE_API_KEY = os.getenv("PINE_API_KEY")
 
-    # Sidebar for model selection and Pinecone index name input
+    # Sidebar for Pinecone index selection
     with st.sidebar:
         st.header("Configuration")
-        model_option = st.radio(
-            "Choose your model:",
-            ("gpt-4-1106-preview", "gpt-3.5-turbo-1106")
-        )
-        pinecone_index_name = st.text_input("Enter Pinecone Index Name")
+        active_indexes = get_active_pinecone_indexes(PINE_API_KEY)
+        selected_index_name = st.selectbox("Select Pinecone Index", active_indexes)
 
-    if pinecone_index_name:
+    if selected_index_name:
         # Your existing setup with user inputs
         model_name = 'text-embedding-ada-002'
         embed = OpenAIEmbeddings(model=model_name, openai_api_key=OPENAI_API_KEY)
 
         pc = Pinecone(api_key=PINE_API_KEY)
-        index = pc.Index(pinecone_index_name)
-        time.sleep(1)
+        index = pc.Index(selected_index_name)
+        time.sleep(1)  # Wait a bit for the index connection
         index.describe_index_stats()
 
         text_field = "text"
+        # Pass the embed object directly instead of embed.embed_query
         vectorstore = PineconeVectorStore(index, embed, text_field)
         retriever = vectorstore.as_retriever()
 
@@ -45,26 +50,14 @@ def main():
         Question: {question}
         """
         prompt = ChatPromptTemplate.from_template(template)
-        model = ChatOpenAI(temperature=0, model=model_option, openai_api_key=OPENAI_API_KEY)
-
-        def format_docs_with_sources(docs):
-            # This function formats the documents and includes their sources.
-            formatted_docs = []
-            for doc in docs:
-                content = doc.page_content
-                source = doc.metadata.get('source', 'Unknown source')
-                formatted_docs.append(f"{content}\nSource: {source}")
-            return "\n\n".join(formatted_docs)
-
-        # Use RAGStream for streaming documents
-        rag_stream = RAGStream(
-            retriever=retriever,
-            generator=prompt | model | StrOutputParser(),
-            formatter=format_docs_with_sources
-        )
+        model = ChatOpenAI(temperature=0, model="gpt-4-1106-preview", openai_api_key=OPENAI_API_KEY)
+        chain = (RunnableParallel({"context": retriever, "question": RunnablePassthrough()})
+                 | prompt
+                 | model
+                 | StrOutputParser())
 
         # Query input area
-        query = st.text_area("Enter your query:", height=150)
+        query = st.text_area("Enter your query:", height=150)  # Adjust the height as needed
         submit_button = st.button('Submit Query')
 
         if submit_button:
@@ -72,14 +65,13 @@ def main():
                 # Log the input query to the terminal
                 print(f"Input Query: {query}")
 
-                # Start the streaming process
-                responses = rag_stream.stream({"question": query})
+                response = chain.invoke(query)
 
-                # Collect and display responses
-                for response in responses:
-                    # Log the response to the terminal
-                    print(f"Output Response: {response}")
-                    st.write(response)
+                # Log the response to the terminal
+                print(f"Output Response: {response}")
+
+            st.write(response)
 
 if __name__ == "__main__":
     main()
+
