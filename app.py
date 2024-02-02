@@ -12,21 +12,9 @@ from langchain_openai import ChatOpenAI
 # Function to get active Pinecone index names
 def get_active_pinecone_indexes(api_key):
     pc = Pinecone(api_key=api_key)
-    try:
-        indexes_info = pc.list_indexes()
-        # If indexes_info successfully retrieves data and 'indexes' is a key in the response
-        if 'indexes' in indexes_info:
-            # Iterate through each index in the list of indexes
-            active_index_names = [
-                index['name'] for index in indexes_info['indexes'] 
-                if index.get('status', {}).get('state') == 'READY'
-            ]
-            return active_index_names
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    return []
-
-
+    indexes_info = pc.list_indexes()
+    active_index_names = [index['name'] for index in indexes_info['indexes'] if index['status'] == 'READY']
+    return active_index_names
 
 # Streamlit App
 def main():
@@ -40,7 +28,16 @@ def main():
     with st.sidebar:
         st.header("Configuration")
         active_indexes = get_active_pinecone_indexes(PINE_API_KEY)
-        selected_index_name = st.selectbox("Select Pinecone Index", active_indexes)
+
+        # Variable to hold the selected index name
+        selected_index_name = None
+
+        # Create a button for each active index and check if it was clicked
+        for index_name in active_indexes:
+            if st.button(index_name):
+                selected_index_name = index_name
+                # Break the loop if a button is clicked to proceed with the selected index
+                break
 
     if selected_index_name:
         # Your existing setup with user inputs
@@ -70,7 +67,7 @@ def main():
 
         # Query input area
         query = st.text_area("Enter your query:", height=150)  # Adjust the height as needed
-        submit_button = st.button('Submit Query')
+        submit_button = st.button('Submit Query', key="submit_query")
 
         if submit_button:
             with st.spinner('Processing...'):
