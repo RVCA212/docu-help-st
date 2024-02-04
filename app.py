@@ -1,110 +1,93 @@
 import os
 import streamlit as st
+from streamlit_chat import message
 from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
 import time
-from langchain_community.vectorstores import Pinecone as PineconeVectorStore
+from langchain_community.vectorstores import PineconeVectorStore
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain_openai import ChatOpenAI
-from openai import OpenAI  # Ensure you have imported OpenAI's SDK
 
-# Streamlit App
-def main():
-    st.title("Chat with Documentation.com")
+# Streamlit App Configuration
+st.set_page_config(page_title="AVA", page_icon=":robot_face:")
+st.markdown("<h1 style='text-align: center;'>AVA - a totally harmless chatbot 😬</h1>", unsafe_allow_html=True)
 
-    # API keys (Read from environment variables)
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    PINE_API_KEY = os.getenv("PINE_API_KEY")
-    openai.api_key = OPENAI_API_KEY  # Set OpenAI API key for usage
+# Read API keys from environment variables
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+PINE_API_KEY = os.getenv("PINE_API_KEY")
 
-    # Sidebar for model selection and Pinecone index name input
-    with st.sidebar:
-        st.header("Configuration")
-        model_option = st.radio(
-            "Choose your model:",
-            ("gpt-4-0125-preview", "gpt-3.5-turbo-1106")
-        )
-        pinecone_index_name = st.text_input("Enter Pinecone Index Name")
+# Sidebar for model selection and Pinecone index name input
+st.sidebar.title("Sidebar")
+model_name = st.sidebar.radio("Choose a model:", ("GPT-3.5-turbo", "GPT-4-turbo"))
+pinecone_index_name = st.sidebar.text_input("Enter Pinecone Index Name")
 
-    if pinecone_index_name:
-        # Your existing setup with user inputs
-        model_name = 'text-embedding-ada-002'
-        embed = OpenAIEmbeddings(model=model_name, openai_api_key=OPENAI_API_KEY)
+# Initialize session state variables if they don't exist
+if 'generated' not in st.session_state:
+    st.session_state['generated'] = []
+if 'past' not in st.session_state:
+    st.session_state['past'] = []
+if 'messages' not in st.session_state:
+    st.session_state['messages'] = [
+        {"role": "system", "content": "You are a helpful assistant."}
+    ]
+if 'total_cost' not in st.session_state:
+    st.session_state['total_cost'] = 0.0
 
-        pc = Pinecone(api_key=PINE_API_KEY)
-        index = pc.Index(pinecone_index_name)
-        time.sleep(1)
-        index.describe_index_stats()
+# Function to generate a response using App 2's functionality
+def generate_response(prompt):
+    st.session_state['messages'].append({"role": "user", "content": prompt})
+    # Your existing setup with user inputs from App 2
+    embed = OpenAIEmbeddings(model="text-embedding-3-small2", openai_api_key=OPENAI_API_KEY)
 
-        text_field = "text"
-        vectorstore = PineconeVectorStore(index, embed, text_field)
-        retriever = vectorstore.as_retriever()
+    pc = Pinecone(api_key=PINE_API_KEY)
+    index = pc.Index(pinecone_index_name)
+    time.sleep(1)  # Ensure index is ready
+    index.describe_index_stats()
 
-        template = """You are an expert software developer who specializes in APIs. Answer the user's question based only on the following context:
-        {context}
-        Question: {question}
-        """
-        prompt = ChatPromptTemplate.from_template(template)
-        model = ChatOpenAI(temperature=0, model=model_option, openai_api_key=OPENAI_API_KEY)
+    vectorstore = PineconeVectorStore(index, embed, "text")
+    retriever = vectorstore.as_retriever()
 
-        def format_docs_with_sources(docs):
-            formatted_docs = []
-            for doc in docs:
-                content = doc.page_content
-                source = doc.metadata.get('source', 'Unknown source')
-                formatted_docs.append(f"{content}\nSource: {source}")
-            return "\n\n".join(formatted_docs)
+    template = """You are an expert software developer who specializes in APIs. Answer the user's question based only on the following context:
+    {context}
+    Question: {question}
+    """
+    prompt_template = ChatPromptTemplate.from_template(template)
+    chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
 
-        rag_chain = (
-            RunnablePassthrough.assign(context=(lambda x: format_docs_with_sources(x["context"])))
-            | prompt
-            | model
-            | StrOutputParser()
-        )
+    rag_chain = (
+        RunnablePassthrough.assign(context=(lambda x: x["context"]))
+        | prompt_template
+        | chat_model
+        | StrOutputParser()
+    )
 
-        rag_chain_with_source = RunnableParallel(
-            {"context": retriever, "question": RunnablePassthrough()}
-        ).assign(answer=rag_chain)
+    rag_chain_with_source = RunnableParallel(
+        {"context": retriever, "question": RunnablePassthrough()}
+    ).assign(answer=rag_chain)
 
-        # Query input area
-        query = st.text_area("Enter your query:", height=150)
-        submit_button = st.button('Submit Query')
+    response = rag_chain_with_source.invoke(prompt)
+    st.session_state['messages'].append({"role": "assistant", "content": response})
+    return response
 
-        if submit_button:
-            # Rewriting the query using the provided code snippet
-            total_time = 0
-            num_iterations = 10
-            response = None
+# Container for chat history and text box
+response_container = st.container()
+container = st.container()
 
-            for _ in range(num_iterations):
-                start_time = time.time()
-                response = openai.Completion.create(
-                    model='gpt-3.5-turbo',  # Adjust the model as necessary
-                    prompt=query,  # Adjust the prompt parameters as necessary
-                    temperature=0,
-                    max_tokens=100
-                )
-                end_time = time.time()
-                total_time += (end_time - start_time)
-                time.sleep(1)
+with container:
+    with st.form(key='my_form', clear_on_submit=True):
+        user_input = st.text_area("You:", key='input', height=100)
+        submit_button = st.form_submit_button(label='Send')
 
-            avg_time = total_time / num_iterations
-            rewritten_query = response.choices[0].text.strip()  # Adjust according to response structure
+    if submit_button and user_input:
+        output = generate_response(user_input)
+        st.session_state['past'].append(user_input)
+        st.session_state['generated'].append(output)
 
-            st.write(f"Rewritten Query (took {avg_time} seconds): {rewritten_query}")
+if st.session_state['generated']:
+    with response_container:
+        for i in range(len(st.session_state['generated'])):
+            message(st.session_state["past"][i], is_user=True, key=str(i) + '_user')
+            message(st.session_state["generated"][i], key=str(i))
 
-            with st.spinner('Processing...'):
-                # Log the input query to the terminal
-                print(f"Input Query: {rewritten_query}")  # Use rewritten query
-
-                response = rag_chain_with_source.invoke(rewritten_query)  # Use rewritten query
-
-                # Log the response to the terminal
-                print(f"Output Response: {response}")
-
-            st.write(response)
-
-if __name__ == "__main__":
-    main()
