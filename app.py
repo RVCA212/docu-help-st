@@ -39,7 +39,7 @@ if 'total_cost' not in st.session_state:
 def generate_response(prompt):
     st.session_state['messages'].append({"role": "user", "content": prompt})
     # Your existing setup with user inputs from App 2
-    embed = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=OPENAI_API_KEY)
+    embed = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=OPENAI_API_KEY)
 
     pc = Pinecone(api_key=PINE_API_KEY)
     index = pc.Index(pinecone_index_name)
@@ -68,10 +68,18 @@ def generate_response(prompt):
     ).assign(answer=rag_chain)
 
     response = rag_chain_with_source.invoke(prompt)
-    # Assuming response is a complex object, extract just the text part or convert it to a string
-    response_text = response.text if hasattr(response, 'text') else str(response)
-    st.session_state['messages'].append({"role": "assistant", "content": response_text})
-    return response_text
+    
+    # Assuming `response` is the object containing 'context', 'question', and 'answer' as shown
+    answer = response['answer']  # Extracting the 'answer' part
+    
+    # Extracting sources from the 'context'
+    sources = [doc.metadata['source'] for doc in response['context']]
+    
+    # Formatting the response to include the answer and all sources
+    formatted_response = f"Answer: {answer}\n\nSources:\n" + "\n".join(sources)
+    
+    st.session_state['messages'].append({"role": "assistant", "content": formatted_response})
+    return formatted_response
 
 # Container for chat history and text box
 response_container = st.container()
