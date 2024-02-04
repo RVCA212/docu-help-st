@@ -13,6 +13,12 @@ from langchain_openai import ChatOpenAI
 
 # Streamlit App Configuration
 st.set_page_config(page_title="Docu-Help", page_icon="🟩")
+st.markdown("""
+    <style>
+    a { color: white; }
+    </style>
+""", unsafe_allow_html=True)
+
 st.markdown("<h1 style='text-align: center;'>ask away:</h1>", unsafe_allow_html=True)
 
 # Read API keys from environment variables
@@ -61,9 +67,11 @@ def generate_response(prompt):
     vectorstore = PineconeVectorStore(index, embed, "text")
     retriever = vectorstore.as_retriever()
 
-    template = """You are an expert software developer who specializes in APIs. Answer the user's question based only on the following context:
-    {context}
-    Question: {question}
+    template = """You are an expert software developer who specializes in software services. You will be given a question by the user and shoudl answer it using your expert knowledge and the provided context (listed below).
+    here is the question: {question}
+    
+
+    here is added context, use this to answer the question: {context}
     """
     prompt_template = ChatPromptTemplate.from_template(template)
     chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
