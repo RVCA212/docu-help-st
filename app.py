@@ -68,8 +68,10 @@ def generate_response(prompt):
     ).assign(answer=rag_chain)
 
     response = rag_chain_with_source.invoke(prompt)
-    st.session_state['messages'].append({"role": "assistant", "content": response})
-    return response
+    # Assuming response is a complex object, extract just the text part or convert it to a string
+    response_text = response.text if hasattr(response, 'text') else str(response)
+    st.session_state['messages'].append({"role": "assistant", "content": response_text})
+    return response_text
 
 # Container for chat history and text box
 response_container = st.container()
