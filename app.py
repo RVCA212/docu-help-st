@@ -12,7 +12,7 @@ from langchain_openai import ChatOpenAI
 
 # Streamlit App Configuration
 st.set_page_config(page_title="Docu-Help", page_icon="🟩")
-st.markdown("<h1 style='text-align: center;'>Ask any question about a specified service:</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>ask away:</h1>", unsafe_allow_html=True)
 
 # Read API keys from environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
