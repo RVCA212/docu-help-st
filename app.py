@@ -39,7 +39,7 @@ if 'total_cost' not in st.session_state:
 def generate_response(prompt):
     st.session_state['messages'].append({"role": "user", "content": prompt})
     # Your existing setup with user inputs from App 2
-    embed = OpenAIEmbeddings(model="text-embedding-3-small2", openai_api_key=OPENAI_API_KEY)
+    embed = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=OPENAI_API_KEY)
 
     pc = Pinecone(api_key=PINE_API_KEY)
     index = pc.Index(pinecone_index_name)
