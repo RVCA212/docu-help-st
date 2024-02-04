@@ -67,12 +67,12 @@ def generate_response(prompt):
     vectorstore = PineconeVectorStore(index, embed, "text")
     retriever = vectorstore.as_retriever()
 
-    template = """You are an expert software developer who specializes in software services. You will be given a question by the user and shoudl answer it using your expert knowledge and the provided context (listed below).
-    here is the question: {question}
-    
-
-    here is added context, use this to answer the question: {context}
-    """
+    template = """Use the following pieces of context to answer the question at the end. 
+        If you don't know the answer, just say that you don't know, don't try to make up an answer. 
+        Be as concise as possible and provide useful information from the context to the suer as the user cannot see the context.
+        {context}
+        Question: {question}
+        Helpful Answer:"""
     prompt_template = ChatPromptTemplate.from_template(template)
     chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
 
