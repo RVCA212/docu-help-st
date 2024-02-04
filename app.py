@@ -11,8 +11,8 @@ from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain_openai import ChatOpenAI
 
 # Streamlit App Configuration
-st.set_page_config(page_title="AVA", page_icon=":robot_face:")
-st.markdown("<h1 style='text-align: center;'>AVA - a totally harmless chatbot 😬</h1>", unsafe_allow_html=True)
+st.set_page_config(page_title="Docu-Help", page_icon="🟩")
+st.markdown("<h1 style='text-align: center;'>Ask any question about a specified service:</h1>", unsafe_allow_html=True)
 
 # Read API keys from environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
