@@ -20,7 +20,7 @@ PINE_API_KEY = os.getenv("PINE_API_KEY")
 
 # Sidebar for model selection and Pinecone index name input
 st.sidebar.title("Sidebar")
-model_name = st.sidebar.radio("Choose a model:", ("GPT-3.5-turbo", "GPT-4-turbo"))
+model_name = st.sidebar.radio("Choose a model:", ("gpt-3.5-turbo-1106", "gpt-4-0125-preview"))
 pinecone_index_name = st.sidebar.text_input("Enter Pinecone Index Name")
 
 # Initialize session state variables if they don't exist
