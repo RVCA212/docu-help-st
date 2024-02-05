@@ -8,17 +8,10 @@ from langchain_community.vectorstores import Pinecone as PineconeVectorStore
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
-from langchain.memory import ConversationBufferMemory
 from langchain_openai import ChatOpenAI
 
 # Streamlit App Configuration
 st.set_page_config(page_title="Docu-Help", page_icon="🟩")
-st.markdown("""
-    <style>
-    a { color: white; }
-    </style>
-""", unsafe_allow_html=True)
-
 st.markdown("<h1 style='text-align: center;'>ask away:</h1>", unsafe_allow_html=True)
 
 # Read API keys from environment variables
@@ -42,23 +35,12 @@ if 'messages' not in st.session_state:
 if 'total_cost' not in st.session_state:
     st.session_state['total_cost'] = 0.0
 
-# Initialize Conversation Memory
-if 'conversation_memory' not in st.session_state:
-    st.session_state['conversation_memory'] = ConversationBufferMemory()
-
 # Function to generate a response using App 2's functionality
 def generate_response(prompt):
-    # Add the user's prompt to the conversation memory
-    st.session_state['conversation_memory'].add_message({"role": "user", "content": prompt})
-    
-    # Retrieve the conversation history
-    conversation_history = st.session_state['conversation_memory'].get_messages()
-    
-    # Convert the conversation history to a format suitable for your context
-    formatted_history = "\n".join([f"{msg['role']}: {msg['content']}" for msg in conversation_history])
-    
-    # Initialize OpenAI Embeddings and Pinecone Vector Store with your API keys
+    st.session_state['messages'].append({"role": "user", "content": prompt})
+    # Your existing setup with user inputs from App 2
     embed = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=OPENAI_API_KEY)
+
     pc = Pinecone(api_key=PINE_API_KEY)
     index = pc.Index(pinecone_index_name)
     time.sleep(1)  # Ensure index is ready
@@ -67,19 +49,15 @@ def generate_response(prompt):
     vectorstore = PineconeVectorStore(index, embed, "text")
     retriever = vectorstore.as_retriever()
 
-    # Define your prompt template including the conversation history
-    template = """Use the following pieces of context to answer the question at the end. 
-        If you don't know the answer, just say that you don't know, don't try to make up an answer. 
-        Be as concise as possible and provide useful information from the context to the user as the user cannot see the context.
-        {context}
-        Question: {question}
-        Helpful Answer:"""
+    template = """You are an expert software developer who specializes in APIs. Answer the user's question based only on the following context:
+    {context}
+    Question: {question}
+    """
     prompt_template = ChatPromptTemplate.from_template(template)
     chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
 
-    # Setup the RAG chain with conversation history as context
     rag_chain = (
-        RunnablePassthrough.assign(context=(lambda x: formatted_history + "\n\n" + x["context"]))
+        RunnablePassthrough.assign(context=(lambda x: x["context"]))
         | prompt_template
         | chat_model
         | StrOutputParser()
@@ -89,25 +67,19 @@ def generate_response(prompt):
         {"context": retriever, "question": RunnablePassthrough()}
     ).assign(answer=rag_chain)
 
-    # Invoke the RAG chain with the current question and conversation history
-    response = rag_chain_with_source.invoke({"context": formatted_history, "question": prompt})
+    response = rag_chain_with_source.invoke(prompt)
     
-    # Extract the 'answer' part from the response
-    answer = response['answer']
+    # Assuming `response` is the object containing 'context', 'question', and 'answer' as shown
+    answer = response['answer']  # Extracting the 'answer' part
     
-    # Optionally, extract sources from the 'context' if needed
+    # Extracting sources from the 'context'
     sources = [doc.metadata['source'] for doc in response['context']]
     
-    # Format the response to include the answer and all sources
+    # Formatting the response to include the answer and all sources
     formatted_response = f"Answer: {answer}\n\nSources:\n" + "\n".join(sources)
     
-    # Add the assistant's response to the conversation memory
-    st.session_state['conversation_memory'].add_message({"role": "assistant", "content": formatted_response})
-    
-    # Update the UI with the new response
     st.session_state['messages'].append({"role": "assistant", "content": formatted_response})
     return formatted_response
-
 
 # Container for chat history and text box
 response_container = st.container()
@@ -128,3 +100,4 @@ if st.session_state['generated']:
         for i in range(len(st.session_state['generated'])):
             message(st.session_state["past"][i], is_user=True, key=str(i) + '_user')
             message(st.session_state["generated"][i], key=str(i))
+
