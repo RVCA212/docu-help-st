@@ -1,8 +1,9 @@
 streamlit
-langchain_openai
+langchain
+langchain-openai
 pinecone-client
-langchain_community
-langchain_core
+langchain-community
+langchain-core
 openai==1.6.1
 streamlit-chat
 tiktoken
