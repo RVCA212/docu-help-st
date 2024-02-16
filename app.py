@@ -37,6 +37,18 @@ TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 st.sidebar.title("Sidebar")
 pinecone_index_name = st.sidebar.text_input("Enter Pinecone Index Name")
 
+class GraphState(TypedDict):
+    """
+    Represents the state of an agent in the conversation.
+
+    Attributes:
+        keys: A dictionary where each key is a string and the value is expected to be a list or another structure
+              that supports addition with `operator.add`. This could be used, for instance, to accumulate messages
+              or other pieces of data throughout the graph.
+    """
+
+    keys: Dict[str, any]
+
 def retrieve(state):
     """
     Retrieve documents
