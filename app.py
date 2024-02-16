@@ -4,7 +4,7 @@ from streamlit_chat import message
 import time
 import json
 import operator
-from typing import Annotated, Sequence, TypedDict
+from typing import Annotated, Sequence, Dict, TypedDict
 from langchain import hub
 from langchain.output_parsers import PydanticOutputParser
 from langchain.output_parsers.openai_tools import PydanticToolsParser
