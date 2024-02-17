@@ -104,7 +104,7 @@ def generate(state):
     # Prompt
     prompt = hub.pull("rlm/rag-prompt")
 
-    llm = ChatMistralAI(mistral_api_key=mistral_api_key, temperature=0, model="mistral-medium")
+    llm = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model="mistral-medium")
 
     # Post-processing
     def format_docs(docs):
@@ -143,7 +143,7 @@ def grade_documents(state):
         binary_score: str = Field(description="Relevance score 'yes' or 'no'")
 
     # LLM
-   llm = ChatMistralAI(mistral_api_key=mistral_api_key, temperature=0, model="mistral-medium")
+   llm = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model="mistral-medium")
 
 
     # Prompt
@@ -212,7 +212,7 @@ def transform_query(state):
 
 
     # Grader
-    llm = ChatMistralAI(mistral_api_key=mistral_api_key, temperature=0.2, model="mistral-medium")
+    llm = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0.2, model="mistral-medium")
 
     # Prompt
     chain = prompt | llm | StrOutputParser()
