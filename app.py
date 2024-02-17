@@ -37,6 +37,18 @@ TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 st.sidebar.title("Sidebar")
 pinecone_index_name = st.sidebar.text_input("Enter Pinecone Index Name")
 
+st.session_state['messages'].append({"role": "user", "content": prompt})
+# Your existing setup with user inputs from App 2
+embed = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=OPENAI_API_KEY)
+
+pc = Pinecone(api_key=PINE_API_KEY)
+index = pc.Index(pinecone_index_name)
+time.sleep(1)  # Ensure index is ready
+index.describe_index_stats()
+
+vectorstore = PineconeVectorStore(index, embed, "text")
+retriever = vectorstore.as_retriever()
+
 class GraphState(TypedDict):
     """
     Represents the state of an agent in the conversation.
