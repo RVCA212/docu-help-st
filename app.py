@@ -29,8 +29,12 @@ st.markdown("<h1 style='text-align: center;'>Ask Away:</h1>", unsafe_allow_html=
 
 # Read API keys from environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 PINE_API_KEY = os.getenv("PINE_API_KEY")
 LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY")
+LANGCHAIN_TRACING_V2 = 'true'
+LANGCHAIN_ENDPOINT = "https://api.smith.langchain.com"
+LANGCHAIN_PROJECT = "docu-help"
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
 # Sidebar for Pinecone index name input only
@@ -136,19 +140,10 @@ def grade_documents(state):
         binary_score: str = Field(description="Relevance score 'yes' or 'no'")
 
     # LLM
-    model = ChatOpenAI(temperature=0, model="gpt-3.5-turbo-0125", streaming=True)
-
-    # Tool
-    grade_tool_oai = convert_to_openai_tool(grade)
-
-    # LLM with tool and enforce invocation
-    llm_with_tool = model.bind(
-        tools=[convert_to_openai_tool(grade_tool_oai)],
-        tool_choice={"type": "function", "function": {"name": "grade"}},
+   llm = ChatMistralAI(
+        mistral_api_key=mistral_api_key, temperature=0, model="mistral-medium"
     )
 
-    # Parser
-    parser_tool = PydanticToolsParser(tools=[grade])
 
     # Prompt
     prompt = PromptTemplate(
@@ -161,14 +156,14 @@ def grade_documents(state):
     )
 
     # Chain
-    chain = prompt | llm_with_tool | parser_tool
+    chain = prompt | llm | parser_tool
 
     # Score
     filtered_docs = []
     search = "No"  # Default do not opt for web search to supplement retrieval
     for d in documents:
         score = chain.invoke({"question": question, "context": d.page_content})
-        grade = score[0].binary_score
+        grade = score["score"]
         if grade == "yes":
             print("---GRADE: DOCUMENT RELEVANT---")
             filtered_docs.append(d)
@@ -210,16 +205,18 @@ def transform_query(state):
         \n ------- \n
         {question}
         \n ------- \n
-        Formulate an improved question: """,
+        Formulate an improved question that trys to find the context needed for the answer: """,
         input_variables=["question"],
     )
 
 
     # Grader
-    model = ChatOpenAI(temperature=0, model="gpt-4-0125-preview", streaming=True)
+    llm = ChatMistralAI(
+        mistral_api_key=mistral_api_key, temperature=0.2, model="mistral-medium"
+    )
 
     # Prompt
-    chain = prompt | model | StrOutputParser()
+    chain = prompt | llm | StrOutputParser()
     better_question = chain.invoke({"question": question})
 
     return {"keys": {"documents": documents, "question": better_question}}
@@ -281,18 +278,40 @@ def decide_to_generate(state):
         return "generate"
     pass
 
-# Function to generate a response using the new backend functionality
-def generate_response(prompt):
-    st.session_state['messages'].append({"role": "user", "content": prompt})
+def generate(state):
+    """
+    Generate answer
 
-    # Here you call the new backend functionality and pass the user's question
-    response = new_backend_functionality(prompt)
+    Args:
+        state (dict): The current graph state
 
-    # Assuming `response` is just the final 'Answer' text from your backend
-    formatted_response = f"Answer: {response}"
+    Returns:
+        state (dict): New key added to state, generation, that contains generation
+    """
+    print("---GENERATE---")
+    state_dict = state["keys"]
+    question = state_dict["question"]
+    documents = state_dict["documents"]
+    local = state_dict["local"]  # Ensure this key is correctly set before calling generate
 
-    st.session_state['messages'].append({"role": "assistant", "content": formatted_response})
-    return formatted_response
+    # Prompt
+    prompt = hub.pull("rlm/rag-prompt")
+
+    llm = ChatMistralAI(model="mistral-medium", temperature=0, mistral_api_key=os.getenv("MISTRAL_API_KEY"))
+
+    # Post-processing
+    def format_docs(docs):
+        return "\n\n".join(doc.page_content for doc in docs)
+
+    # Chain
+    rag_chain = prompt | llm | StrOutputParser()
+
+    # Run
+    generation = rag_chain.invoke({"context": documents, "question": question})
+    return {
+        "keys": {"documents": documents, "question": question, "generation": generation}
+    }
+
 
 workflow = StateGraph(GraphState)
 
@@ -333,7 +352,23 @@ if 'messages' not in st.session_state:
         {"role": "system", "content": "You are a helpful assistant."}
     ]
 
-# Container for chat history and text box
+# Function to run the workflow with the user's query
+def run_workflow_with_user_query(user_query):
+    inputs = {
+        "keys": {
+            "question": user_query,
+            "local": "No",  # Assuming API usage as in your example
+        }
+    }
+    generated_responses = []
+    for output in app.stream(inputs):
+        for key, value in output.items():
+            # Assuming you want to capture the final generation output for the response
+            if 'generation' in value['keys']:
+                generated_responses.append(value['keys']['generation'])
+    return generated_responses[-1] if generated_responses else "I'm sorry, I couldn't generate a response."
+
+# Streamlit app UI setup
 response_container = st.container()
 container = st.container()
 
@@ -343,10 +378,12 @@ with container:
         submit_button = st.form_submit_button(label='Send')
 
     if submit_button and user_input:
-        output = generate_response(user_input)
+        # Run the workflow with the user's query and capture the response
+        output = run_workflow_with_user_query(user_input)
         st.session_state['past'].append(user_input)
         st.session_state['generated'].append(output)
 
+# Displaying past queries and responses
 if st.session_state['generated']:
     with response_container:
         for i in range(len(st.session_state['generated'])):
