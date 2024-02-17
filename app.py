@@ -18,6 +18,9 @@ from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_community.chat_models import ChatOllama
+from langchain_mistralai.chat_models import ChatMistralAI
 from langgraph.prebuilt import ToolInvocation
 from langgraph.graph import END, StateGraph
 import pprint
@@ -87,21 +90,21 @@ def generate(state):
     Generate answer
 
     Args:
-        state (dict): The current state of the agent, including all keys.
+        state (dict): The current graph state
 
     Returns:
-        dict: New key added to state, generation, that contains generation.
+        state (dict): New key added to state, generation, that contains generation
     """
     print("---GENERATE---")
     state_dict = state["keys"]
     question = state_dict["question"]
     documents = state_dict["documents"]
+    local = state_dict["local"]  # Ensure this key is correctly set before calling generate
 
     # Prompt
     prompt = hub.pull("rlm/rag-prompt")
 
-    # LLM
-    llm = ChatOpenAI(model_name="gpt-4-0125-preview", temperature=0, streaming=True)
+    llm = ChatMistralAI(mistral_api_key=mistral_api_key, temperature=0, model="mistral-medium")
 
     # Post-processing
     def format_docs(docs):
@@ -140,9 +143,7 @@ def grade_documents(state):
         binary_score: str = Field(description="Relevance score 'yes' or 'no'")
 
     # LLM
-   llm = ChatMistralAI(
-        mistral_api_key=mistral_api_key, temperature=0, model="mistral-medium"
-    )
+   llm = ChatMistralAI(mistral_api_key=mistral_api_key, temperature=0, model="mistral-medium")
 
 
     # Prompt
@@ -211,9 +212,7 @@ def transform_query(state):
 
 
     # Grader
-    llm = ChatMistralAI(
-        mistral_api_key=mistral_api_key, temperature=0.2, model="mistral-medium"
-    )
+    llm = ChatMistralAI(mistral_api_key=mistral_api_key, temperature=0.2, model="mistral-medium")
 
     # Prompt
     chain = prompt | llm | StrOutputParser()
@@ -277,40 +276,6 @@ def decide_to_generate(state):
         print("---DECISION: GENERATE---")
         return "generate"
     pass
-
-def generate(state):
-    """
-    Generate answer
-
-    Args:
-        state (dict): The current graph state
-
-    Returns:
-        state (dict): New key added to state, generation, that contains generation
-    """
-    print("---GENERATE---")
-    state_dict = state["keys"]
-    question = state_dict["question"]
-    documents = state_dict["documents"]
-    local = state_dict["local"]  # Ensure this key is correctly set before calling generate
-
-    # Prompt
-    prompt = hub.pull("rlm/rag-prompt")
-
-    llm = ChatMistralAI(model="mistral-medium", temperature=0, mistral_api_key=os.getenv("MISTRAL_API_KEY"))
-
-    # Post-processing
-    def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
-
-    # Chain
-    rag_chain = prompt | llm | StrOutputParser()
-
-    # Run
-    generation = rag_chain.invoke({"context": documents, "question": question})
-    return {
-        "keys": {"documents": documents, "question": question, "generation": generation}
-    }
 
 
 workflow = StateGraph(GraphState)
