@@ -143,7 +143,7 @@ def grade_documents(state):
         binary_score: str = Field(description="Relevance score 'yes' or 'no'")
 
     # LLM
-   llm = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model="mistral-medium")
+    llm = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model="mistral-medium")
 
 
     # Prompt
