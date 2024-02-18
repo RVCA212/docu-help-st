@@ -10,3 +10,4 @@ tiktoken
 langgraph 
 tavily-python 
 langsmith
+langchain-mistralai
