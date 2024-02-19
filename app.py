@@ -79,6 +79,14 @@ def retrieve(state):
         dict: New key added to state, documents, that contains documents.
     """
     print("---RETRIEVE---")
+
+    pc = Pinecone(api_key=PINE_API_KEY)
+    index = pc.Index(pinecone_index_name)
+    time.sleep(1)  # Ensure index is ready
+    index.describe_index_stats()
+    
+    vectorstore = PineconeVectorStore(index, embed, "text")
+    retriever = vectorstore.as_retriever()
     state_dict = state["keys"]
     question = state_dict["question"]
     documents = retriever.get_relevant_documents(question)
