@@ -314,8 +314,7 @@ if 'messages' not in st.session_state:
 def run_workflow_with_user_query(user_query):
     inputs = {
         "keys": {
-            "question": user_query,
-            "local": "No",  # Assuming API usage as in your example
+            "question": user_query
         }
     }
     generated_responses = []
