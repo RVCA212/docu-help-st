@@ -157,15 +157,15 @@ def grade_documents(state):
     filtered_docs = []
     search = "No"  # Default do not opt for web search to supplement retrieval
     for d in documents:
-        score = chain.invoke({"question": question, "context": d.page_content})
-        grade = score["score"]
-        if grade == "yes":
+        # Invoke the chain to get a score as a string
+        score_response = chain.invoke({"question": question, "context": d.page_content})
+        # Since the output is a string, directly compare it with expected response
+        if score_response.strip().lower() == "yes":  # Assuming 'yes' or 'no' response
             print("---GRADE: DOCUMENT RELEVANT---")
             filtered_docs.append(d)
         else:
             print("---GRADE: DOCUMENT NOT RELEVANT---")
             search = "Yes"  # Perform web search
-            continue
 
     return {
         "keys": {
