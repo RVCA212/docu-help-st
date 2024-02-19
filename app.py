@@ -4,6 +4,7 @@ from streamlit_chat import message
 import time
 import json
 import operator
+from pinecone import Pinecone
 from typing import Annotated, Sequence, Dict, TypedDict
 from langchain import hub
 from langchain.output_parsers import PydanticOutputParser
@@ -11,7 +12,7 @@ from langchain.output_parsers.openai_tools import PydanticToolsParser
 from langchain.prompts import PromptTemplate
 from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores import Pinecone as PineconeVectorStore
 from langchain_core.messages import BaseMessage, FunctionMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field
