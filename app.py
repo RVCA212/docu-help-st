@@ -157,7 +157,7 @@ def grade_documents(state):
     )
 
     # Chain
-    chain = prompt | llm | parser_tool
+    chain = prompt | llm | StrOutputParser()
 
     # Score
     filtered_docs = []
