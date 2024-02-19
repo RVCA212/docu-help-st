@@ -136,12 +136,6 @@ def grade_documents(state):
     question = state_dict["question"]
     documents = state_dict["documents"]
 
-    # Data model
-    class grade(BaseModel):
-        """Binary score for relevance check."""
-
-        binary_score: str = Field(description="Relevance score 'yes' or 'no'")
-
     # LLM
     llm = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model="mistral-medium")
 
