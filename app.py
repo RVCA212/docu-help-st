@@ -99,8 +99,7 @@ def generate(state):
     state_dict = state["keys"]
     question = state_dict["question"]
     documents = state_dict["documents"]
-    local = state_dict["local"]  # Ensure this key is correctly set before calling generate
-
+    
     # Prompt
     prompt = hub.pull("rlm/rag-prompt")
 
