@@ -3,6 +3,7 @@ langchain
 langchain-openai
 pinecone-client
 langchain-community
+langchainhub
 langchain-core
 openai==1.6.1
 streamlit-chat
