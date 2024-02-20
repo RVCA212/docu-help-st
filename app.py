@@ -9,7 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain_openai import ChatOpenAI
-from langchain_mistralai.chat_models import ChatMistralAI
+from langchain_community.chat_models.fireworks import ChatFireworks
 
 # Streamlit App Configuration
 st.set_page_config(page_title="Docu-Help", page_icon="🟩")
@@ -18,7 +18,7 @@ st.markdown("<h1 style='text-align: center;'>ask away:</h1>", unsafe_allow_html=
 # Read API keys from environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINE_API_KEY = os.getenv("PINE_API_KEY")
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+FIREWORKS_API_KEY = os.getenv("FIREWORKS_API_KEY")
 LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY")
 LANGCHAIN_TRACING_V2 = 'true'
 LANGCHAIN_ENDPOINT = "https://api.smith.langchain.com"
@@ -26,7 +26,7 @@ LANGCHAIN_PROJECT = "docu-help"
 
 # Sidebar for model selection and Pinecone index name input
 st.sidebar.title("Sidebar")
-model_name = st.sidebar.radio("Choose a model:", ("gpt-3.5-turbo-1106", "gpt-4-0125-preview", "mistral-medium"))
+model_name = st.sidebar.radio("Choose a model:", ("gpt-3.5-turbo-1106", "gpt-4-0125-preview", "mixtral"))
 pinecone_index_name = st.sidebar.text_input("Enter Pinecone Index Name")
 
 # Initialize session state variables if they don't exist
@@ -62,8 +62,8 @@ def generate_response(prompt):
     prompt_template = ChatPromptTemplate.from_template(template)
 
     
-    if model_name == "mistral-medium":
-        chat_model = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model=model_name)
+    if model_name == "mixtral":
+        chat_model = ChatFireworks(model="accounts/fireworks/models/mixtral-8x7b-instruct")
     else:
         chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
 
