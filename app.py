@@ -48,6 +48,17 @@ pinecone_index_name = st.sidebar.text_input("Enter Pinecone Index Name")
 # Your existing setup with user inputs from App 2
 embed = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=OPENAI_API_KEY)
 
+# Immediately initialize session state keys at the start of your script
+if 'generated' not in st.session_state:
+    st.session_state['generated'] = []
+if 'past' not in st.session_state:
+    st.session_state['past'] = []
+if 'messages' not in st.session_state:
+    st.session_state['messages'] = [
+        {"role": "system", "content": "You are a helpful assistant."}
+    ]
+
+
 def process_user_query(user_query):
 
     pc = Pinecone(api_key=PINE_API_KEY)
@@ -310,29 +321,19 @@ def process_user_query(user_query):
     # Compile
     app = workflow.compile()
 
-    # Initialize session state variables if they don't exist
-    if 'generated' not in st.session_state:
-        st.session_state['generated'] = []
-    if 'past' not in st.session_state:
-        st.session_state['past'] = []
-    if 'messages' not in st.session_state:
-        st.session_state['messages'] = [
-            {"role": "system", "content": "You are a helpful assistant."}
-        ]
-
     # Function to run the workflow with the user's query
-        inputs = {
-            "keys": {
-                "question": user_query
-            }
+    inputs = {
+        "keys": {
+            "question": user_query
         }
-        generated_responses = []
-        for output in app.stream(inputs):
-            for key, value in output.items():
-                # Assuming you want to capture the final generation output for the response
-                if 'generation' in value['keys']:
-                    generated_responses.append(value['keys']['generation'])
-        return generated_responses[-1] if generated_responses else "I'm sorry, I couldn't generate a response."
+    }
+    generated_responses = []
+    for output in app.stream(inputs):
+        for key, value in output.items():
+            # Assuming you want to capture the final generation output for the response
+            if 'generation' in value['keys']:
+                generated_responses.append(value['keys']['generation'])
+    return generated_responses[-1] if generated_responses else "I'm sorry, I couldn't generate a response."
 
 # Streamlit app UI setup
 response_container = st.container()
@@ -345,7 +346,7 @@ with container:
 
     if submit_button and user_input:
         # Run the workflow with the user's query and capture the response
-        output = run_workflow_with_user_query(user_input)
+        output = process_user_query(user_input)
         st.session_state['past'].append(user_input)
         st.session_state['generated'].append(output)
 
