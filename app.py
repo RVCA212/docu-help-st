@@ -107,24 +107,22 @@ container = st.container()
 
 with container:
     with st.form(key='my_form', clear_on_submit=True):
-        user_input = st.text_area("You:", key='input', height=100)
-        submit_button = st.form_submit_button(label='Send')
+    user_input = st.text_area("You:", key='input', height=100)
+    submit_button = st.form_submit_button(label='Send')
 
-        if submit_button and user_input:
-            st.session_state['past'].append(user_input)
-            st.session_state['generated'].append(None)  # Initialize as None
+    if submit_button and user_input:
+        st.session_state['past'].append(user_input)
+        st.session_state['generated'].put(None)  # Initialize as None
 
-            # Start the async function to stream the output
-            output_generator = asyncio.create_task(generate_response_stream(user_input))
+        # Start the async function to stream the output
+        output_generator = asyncio.create_task(generate_response_stream(user_input, st.session_state['generated']))
 
-            # Update the output every 0.1 seconds
-            while output_generator.done() is False:
-                st.session_state['generated'][-1] = output_generator.result()  # Update the generated message
-                time.sleep(0.1)
+        # Update the output every 0.1 seconds
+        while output_generator.done() is False:
+            time.sleep(0.1)
 
 if not st.session_state['generated'].empty():
     with response_container:
         while not st.session_state['generated'].empty():
             msg = st.session_state['generated'].get()
             message(msg, key=str(len(st.session_state['generated']) - 1))
-
