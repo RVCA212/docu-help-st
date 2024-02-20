@@ -122,9 +122,9 @@ with container:
                 st.session_state['generated'][-1] = output_generator.result()  # Update the generated message
                 time.sleep(0.1)
 
-if st.session_state['generated']:
+if not st.session_state['generated'].empty():
     with response_container:
-        for i in range(len(st.session_state['generated'])):
-            message(st.session_state["past"][i], is_user=True, key=str(i) + '_user')
-            message(st.session_state["generated"][i], key=str(i))
+        while not st.session_state['generated'].empty():
+            msg = st.session_state['generated'].get()
+            message(msg, key=str(len(st.session_state['generated']) - 1))
 
