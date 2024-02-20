@@ -4,6 +4,7 @@ from streamlit_chat import message
 from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
 import time
+import asyncio
 from langchain_pinecone.vectorstores import Pinecone as PineconeVectorStore
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -30,8 +31,9 @@ model_name = st.sidebar.radio("Choose a model:", ("gpt-3.5-turbo-1106", "gpt-4-0
 pinecone_index_name = st.sidebar.text_input("Enter Pinecone Index Name")
 
 # Initialize session state variables if they don't exist
+# Initialize queue and session state variables if they don't exist
 if 'generated' not in st.session_state:
-    st.session_state['generated'] = []
+    st.session_state['generated'] = queue.Queue()
 if 'past' not in st.session_state:
     st.session_state['past'] = []
 if 'messages' not in st.session_state:
@@ -42,7 +44,10 @@ if 'total_cost' not in st.session_state:
     st.session_state['total_cost'] = 0.0
 
 # Function to generate a response using App 2's functionality
-def generate_response(prompt):
+# Adjusted generate_response_stream function
+async def generate_response_stream(prompt, queue):
+    output = await generate_response(prompt)
+    return output
     st.session_state['messages'].append({"role": "user", "content": prompt})
     # Your existing setup with user inputs from App 2
     embed = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=OPENAI_API_KEY)
@@ -87,8 +92,10 @@ def generate_response(prompt):
     # Extracting sources from the 'context'
     sources = [doc.metadata['source'] for doc in response['context']]
     
-    # Formatting the response to include the answer and all sources
     formatted_response = f"Answer: {answer}\n\nSources:\n" + "\n".join(sources)
+
+    # Add the formatted_response to the queue
+    queue.put(formatted_response)
     
     st.session_state['messages'].append({"role": "assistant", "content": formatted_response})
     return formatted_response
@@ -102,10 +109,17 @@ with container:
         user_input = st.text_area("You:", key='input', height=100)
         submit_button = st.form_submit_button(label='Send')
 
-    if submit_button and user_input:
-        output = generate_response(user_input)
-        st.session_state['past'].append(user_input)
-        st.session_state['generated'].append(output)
+        if submit_button and user_input:
+            st.session_state['past'].append(user_input)
+            st.session_state['generated'].append(None)  # Initialize as None
+
+            # Start the async function to stream the output
+            output_generator = asyncio.create_task(generate_response_stream(user_input))
+
+            # Update the output every 0.1 seconds
+            while output_generator.done() is False:
+                st.session_state['generated'][-1] = output_generator.result()  # Update the generated message
+                time.sleep(0.1)
 
 if st.session_state['generated']:
     with response_container:
