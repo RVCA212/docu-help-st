@@ -7,4 +7,4 @@ openai==1.6.1
 streamlit-chat
 langchain-mistralai
 langsmith
-langchain_pinecone
+langchain-pinecone
