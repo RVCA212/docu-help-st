@@ -4,7 +4,7 @@ from streamlit_chat import message
 from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
 import time
-from langchain_pinecone.vectorstores import PineconeVectorStore
+from langchain_pinecone.vectorstores import Pinecone as PineconeVectorStore
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
