@@ -17,10 +17,11 @@ st.markdown("<h1 style='text-align: center;'>ask away:</h1>", unsafe_allow_html=
 # Read API keys from environment variables
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINE_API_KEY = os.getenv("PINE_API_KEY")
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 
 # Sidebar for model selection and Pinecone index name input
 st.sidebar.title("Sidebar")
-model_name = st.sidebar.radio("Choose a model:", ("gpt-3.5-turbo-1106", "gpt-4-0125-preview"))
+model_name = st.sidebar.radio("Choose a model:", ("gpt-3.5-turbo-1106", "gpt-4-0125-preview", "mistral-medium"))
 pinecone_index_name = st.sidebar.text_input("Enter Pinecone Index Name")
 
 # Initialize session state variables if they don't exist
@@ -54,7 +55,12 @@ def generate_response(prompt):
     Question: {question}
     """
     prompt_template = ChatPromptTemplate.from_template(template)
-    chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
+
+    if model_name = "mistral-medium"
+        llm = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model=model_name)
+        else:
+            chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
+            
 
     rag_chain = (
         RunnablePassthrough.assign(context=(lambda x: x["context"]))
