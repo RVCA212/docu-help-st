@@ -56,11 +56,12 @@ def generate_response(prompt):
     """
     prompt_template = ChatPromptTemplate.from_template(template)
 
-    if model_name = "mistral-medium"
+    
+    if model_name == "mistral-medium":
         llm = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model=model_name)
-        else:
-            chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
-            
+    else:
+        chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
+
 
     rag_chain = (
         RunnablePassthrough.assign(context=(lambda x: x["context"]))
