@@ -59,7 +59,7 @@ def generate_response(prompt):
 
     
     if model_name == "mistral-medium":
-        llm = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model=model_name)
+        chat_model = ChatMistralAI(mistral_api_key=MISTRAL_API_KEY, temperature=0, model=model_name)
     else:
         chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
 
