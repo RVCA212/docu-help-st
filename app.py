@@ -19,6 +19,10 @@ st.markdown("<h1 style='text-align: center;'>ask away:</h1>", unsafe_allow_html=
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINE_API_KEY = os.getenv("PINE_API_KEY")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY")
+LANGCHAIN_TRACING_V2 = 'true'
+LANGCHAIN_ENDPOINT = "https://api.smith.langchain.com"
+LANGCHAIN_PROJECT = "docu-help"
 
 # Sidebar for model selection and Pinecone index name input
 st.sidebar.title("Sidebar")
