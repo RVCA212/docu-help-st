@@ -9,6 +9,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
 from langchain_openai import ChatOpenAI
+from langchain_mistralai.chat_models import ChatMistralAI
 
 # Streamlit App Configuration
 st.set_page_config(page_title="Docu-Help", page_icon="🟩")
