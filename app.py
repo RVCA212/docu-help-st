@@ -4,6 +4,7 @@ from streamlit_chat import message
 from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
 import time
+import queue
 import asyncio
 from langchain_pinecone.vectorstores import Pinecone as PineconeVectorStore
 from langchain_core.output_parsers import StrOutputParser
