@@ -64,7 +64,13 @@ Question: {question}
     if model_name == "mixtral":
         chat_model = ChatFireworks(model="accounts/fireworks/models/mixtral-8x7b-instruct")
     else:
-        chat_model = ChatOpenAI(temperature=0, model=model_name, openai_api_key=OPENAI_API_KEY)
+        stream_params = {
+            "temperature": 0,
+            "model": model_name,
+            "openai_api_key": OPENAI_API_KEY,
+            "stream": True,
+        }
+        chat_model = ChatOpenAI(**stream_params)
 
     rag_chain = (
         RunnablePassthrough.assign(context=(lambda x: x["context"]))
